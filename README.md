@@ -15,10 +15,12 @@ boost library - lockfreeQueue 사용
 
 
 echo 테스트(100명)
+
 <img width="359" height="125" alt="에코 테스트1" src="https://github.com/user-attachments/assets/f6fadd40-48a3-42a2-b500-f29d7627c11c" />
 
 
 더미 테스트(3000명)
 이동 500ms
 채팅 300ms
+
 <img width="229" height="119" alt="섹터 테스트" src="https://github.com/user-attachments/assets/1c6ac3b2-76e7-47ec-93d2-7445726b3723" />
