@@ -1,0 +1,37 @@
+﻿  ChatServer.cpp
+C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\CLFFreeList.h(125,12): warning C4244: '초기화 중': 'LONG64'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  (소스 파일 'ChatServer.cpp'을(를) 컴파일하는 중)
+      C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\CLFFreeList.h(125,12):
+      템플릿 인스턴스화 컨텍스트(가장 오래된 인스턴스화 컨텍스트)가
+          C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\ChatServer.h(131,22):
+          컴파일되는 클래스 템플릿 인스턴스화 'CLFFreeList<Player>'에 대한 참조를 확인하세요.
+          C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\CLFFreeList.h(111,1):
+          클래스 템플릿 멤버 함수 'CLFFreeList<Player>::CLFFreeList(int,bool)'을(를) 컴파일하는 중입니다.
+              C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\ChatServer.cpp(5,1):
+              'ChatServer::ChatServer'에서 'CLFFreeList<Player>::CLFFreeList'에 대한 첫 번째 참조를 확인하세요.
+  
+  ConsoleApplication2.cpp
+C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\ConsoleApplication2.cpp(6,40): warning C4316: 'ChatServer': 힙에 할당된 개체가 64에 맞추어져 있지 않을 수도 있습니다
+  CPacket.cpp
+C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\CPacket.cpp(48,9): warning C4002: 함수 같은 매크로 호출 'RtlZeroMemory'에 대해 인수가 너무 많습니다.
+C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\CLFFreeList.h(125,12): warning C4244: '초기화 중': 'LONG64'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  (소스 파일 'CPacket.cpp'을(를) 컴파일하는 중)
+      C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\CLFFreeList.h(125,12):
+      템플릿 인스턴스화 컨텍스트(가장 오래된 인스턴스화 컨텍스트)가
+          C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\CPacket.cpp(4,31):
+          컴파일되는 클래스 템플릿 인스턴스화 'CLFFreeList<CPacket>'에 대한 참조를 확인하세요.
+          C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\CLFFreeList.h(111,1):
+          클래스 템플릿 멤버 함수 'CLFFreeList<CPacket>::CLFFreeList(int,bool)'을(를) 컴파일하는 중입니다.
+              C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\CPacket.cpp(4,31):
+              'void __cdecl `dynamic initializer for 'public: static CLFFreeList<CPacket> CPacket::g_PacketPool''(void)'에서 'CLFFreeList<CPacket>::CLFFreeList'에 대한 첫 번째 참조를 확인하세요.
+  
+  CRingBuffer.cpp
+  IOCPServer.cpp
+C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\IOCPServer.cpp(51,17): warning C4316: 'Session': 힙에 할당된 개체가 64에 맞추어져 있지 않을 수도 있습니다
+C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\IOCPServer.cpp(625,29): warning C4805: '==': 연산에 'LONG' 형식과 'bool' 형식을 함께 사용하는 것은 안전하지 않습니다.
+C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\IOCPServer.cpp(649,18): warning C4244: '인수': 'INT64'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  monitor.cpp
+  코드를 생성하고 있습니다...
+  ConsoleApplication2.vcxproj -> C:\Users\rkdtl\source\repos\ChattingServer\x64\Debug\iocp_test_server.exe
+  'pwsh.exe'은(는) 내부 또는 외부 명령, 실행할 수 있는 프로그램, 또는
+  배치 파일이 아닙니다.
