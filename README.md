@@ -4,6 +4,7 @@ boost library - lockfreeQueue 사용
 
 간단한 암호화 추가
 
+redis 연동 로직 추가
 
 
 메세지 큐를 이용해서 단일스레드(updateThread)로 메세지처리<br>
