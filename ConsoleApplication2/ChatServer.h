@@ -4,6 +4,8 @@
 #include "Protocol.h"
 #include <unordered_map>
 #include <unordered_set>
+#include <cpp_redis/cpp_redis>
+
 
 struct st_POSITION
 {
@@ -24,11 +26,19 @@ struct st_MSG
 	CPacket* packet;
 };
 
+struct st_Redis
+{
+	UINT64 session;
+	CPacket* packet;
+};
+
 enum en_MSG_TYPE
 {
 	en_MSG_RECV,
 	en_MSG_JOIN,
-	en_MSG_LEAVE
+	en_MSG_LEAVE,
+	en_MSG_LOGIN_OK,
+	en_MSG_LOGIN_FAIL
 };
 
 
@@ -122,8 +132,17 @@ private:
 	BOOL PacketProcess(UINT64 sessionID, CPacket* packet);
 
 	static unsigned int WINAPI UpdateThread(LPVOID arg);
+	static unsigned int WINAPI RedisThread(LPVOID arg);
 
 	void UpdateThread();
+	void RedisThread();
+
+	void EnqueueRedis(UINT64 sessionID, CPacket* packet);
+
+	BOOL Req_Login_Redis(UINT64 sessionID, CPacket* packet);
+	BOOL CompleteLogin(UINT64 sessionID, CPacket* resultPacket, bool success);
+	
+	CPacket* MakeLoginResult(INT64 account, const WCHAR* id, const WCHAR* nick);
 
 private:
 	BOOL exit;
@@ -139,6 +158,14 @@ private:
 
 	HANDLE main_event;
 	HANDLE update_thread;
+
+	HANDLE redis_event;
+	HANDLE redis_thread;
+	
 	boost::lockfree::queue<st_MSG*, boost::lockfree::capacity<4096>> msgQ;
+	boost::lockfree::queue<st_Redis, boost::lockfree::capacity<4096>> redisQ;
+	std::unique_ptr<cpp_redis::client> redis;
+
+
 
 };

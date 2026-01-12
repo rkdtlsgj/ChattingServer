@@ -10,10 +10,16 @@ ChatServer::~ChatServer()
 {
 	exit = TRUE;
 	SetEvent(main_event);
+	SetEvent(redis_event);
+
 	WaitForSingleObject(update_thread, INFINITE);
+	WaitForSingleObject(redis_thread, INFINITE);
 
 	CloseHandle(main_event);
 	CloseHandle(update_thread);
+
+	CloseHandle(redis_event);
+	CloseHandle(redis_thread);
 }
 
 void ChatServer::OnClientJoin(SOCKADDR_IN* connectInfo, UINT64 sessionID)
@@ -75,13 +81,18 @@ void ChatServer::OnError(int errorcode, WCHAR* buf)
 BOOL ChatServer::Start(const WCHAR* ip, int port, short threadCount, bool nagle, int maxUserCount)
 {
 	main_event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	redis_event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
 	if (IOCPServer::Start(ip, port, threadCount, nagle, maxUserCount) == false)
 	{
 		return false;
 	}
-
 	
+	redis = std::make_unique<cpp_redis::client>();
+	redis->connect("127.0.0.1", 6379);
+
+	redis_thread = (HANDLE)_beginthreadex(NULL, 0, RedisThread, (LPVOID)this, NULL, NULL);
+
 	update_thread = ((HANDLE)_beginthreadex(NULL, 0, UpdateThread, (LPVOID)this, NULL, NULL));
 
 	return true;
@@ -90,6 +101,12 @@ BOOL ChatServer::Start(const WCHAR* ip, int port, short threadCount, bool nagle,
 unsigned int WINAPI ChatServer::UpdateThread(LPVOID arg)
 {
 	((ChatServer*)arg)->UpdateThread();
+	return 0;
+}
+
+unsigned int WINAPI ChatServer::RedisThread(LPVOID arg)
+{
+	((ChatServer*)arg)->RedisThread();
 	return 0;
 }
 
@@ -102,29 +119,102 @@ void ChatServer::UpdateThread()
 
 		while (msgQ.pop(msg))
 		{
-			
-
 			switch (msg->type)
 			{
-				case en_MSG_RECV:
-					PacketProcess(msg->session, msg->packet);
-					break;
+			case en_MSG_RECV:
+				PacketProcess(msg->session, msg->packet);
+				break;
 
-				case en_MSG_JOIN:
-					CreatePlayer(msg->session);
-					break;
+			case en_MSG_JOIN:
+				CreatePlayer(msg->session);
+				break;
 
-				case en_MSG_LEAVE:
-					DeletePlayer(msg->session);
-					break;
+			case en_MSG_LEAVE:
+				DeletePlayer(msg->session);
+				break;
 
-				default:
-					break;
+			case en_MSG_LOGIN_OK:
+				CompleteLogin(msg->session, msg->packet, true);
+				break;
+
+			case en_MSG_LOGIN_FAIL:
+				CompleteLogin(msg->session, msg->packet, false);
+				//¿À·ù
+				break;
+
+			default:
+				break;
 			}
 
 			msgPool.Free(msg);
 		}
 	}
+}
+
+void ChatServer::RedisThread()
+{
+	while (!exit)
+	{
+		WaitForSingleObject(redis_event, INFINITE);
+
+		st_Redis job{};
+
+		while (redisQ.pop(job))
+		{
+			UINT64 sessionID = job.session;
+			CPacket* packet = job.packet;
+
+			INT64 account = 0;
+			WCHAR id[20]{};
+			WCHAR nick[20]{};
+			char clientKey[dfSESSIONKEY_LEN]{};
+			(*packet) >> account;
+			packet->GetData((char*)id, dfID_LEN);
+			packet->GetData((char*)nick, dfNiCK_LEN);
+			packet->GetData(clientKey, dfSESSIONKEY_LEN);
+
+			char redisKey[32]{};
+			_i64toa_s(account, redisKey, 32, 10);
+
+			bool ok = false;
+
+			redis->get(redisKey, [clientKey, &ok](cpp_redis::reply& r) 
+				{
+					if (!r.is_string()) 
+					{ 
+						ok = false; 
+						return; 
+					}
+
+					ok = (strcmp(r.as_string().c_str(), clientKey) == 0);
+				});
+
+			redis->sync_commit();
+			
+			CPacket* result = MakeLoginResult(account, id, nick);
+
+			st_MSG* msg = msgPool.Alloc();
+			msg->session = sessionID;
+			msg->packet = result;
+			msg->type = ok ? en_MSG_LOGIN_OK : en_MSG_LOGIN_FAIL;
+
+			msgQ.push(msg);
+			SetEvent(main_event);
+
+			packet->SubRef();
+		}
+	}
+}
+
+CPacket* ChatServer::MakeLoginResult(INT64 account, const WCHAR* id, const WCHAR* nick)
+{
+	CPacket* p = CPacket::Alloc();
+	(*p) << account;
+	p->PutData((char*)id, dfID_LEN);
+	p->PutData((char*)nick, dfNiCK_LEN);
+	p->SetEncodingCode();
+
+	return p;
 }
 
 BOOL ChatServer::PacketProcess(UINT64 sessionID, CPacket* packet)
@@ -136,7 +226,7 @@ BOOL ChatServer::PacketProcess(UINT64 sessionID, CPacket* packet)
 	switch (type)
 	{
 	case en_PACKET_CS_CHAT_REQ_LOGIN:
-		result = Req_Login(sessionID, packet);
+		result = Req_Login_Redis(sessionID, packet);
 		break;
 	case en_PACKET_CS_CHAT_REQ_SECTOR_MOVE:
 		result = Req_SectorMove(sessionID, packet);
@@ -233,7 +323,7 @@ void ChatServer::DeletePlayerSector(Player* player)
 	{
 		WORD y = player->sectorY;
 		WORD x = player->sectorX;
-		if (!IsValidSector(x, y)) 
+		if (!IsValidSector(x, y))
 			return;
 
 		sector[y][x].erase(player);
@@ -241,6 +331,61 @@ void ChatServer::DeletePlayerSector(Player* player)
 		player->sectorX = -1;
 		player->sectorY = -1;
 	}
+}
+
+BOOL ChatServer::CompleteLogin(UINT64 sessionID, CPacket* packet, bool success)
+{
+	Player* player = FindPlayer(sessionID);
+	if (player == nullptr)
+	{
+		packet->SubRef();
+		return true;
+	}
+
+	if (player->sessionID != sessionID)
+	{
+		packet->SubRef();
+		return false;
+	}
+
+	INT64 account = 0;
+	WCHAR id[20];
+	WCHAR nick[20];
+
+	(*packet) >> account;
+	packet->GetData((char*)id, dfID_LEN);
+	packet->GetData((char*)nick, dfNiCK_LEN);
+
+	if (success)
+	{
+		accounts[account] = sessionID;
+		player->isLogined = true;
+
+		//player->SetLogin(sessionID, account, id, nick, key);
+
+		player->accountNo = account;
+		wcscpy_s(player->id, dfID_LEN / 2, id);
+		wcscpy_s(player->nick, dfNiCK_LEN / 2, nick);
+
+		CPacket* res = Res_Login(account, 1);
+		if (res) 
+		{ 
+			SendUnicast(sessionID, res); 
+			res->SubRef(); 
+		}
+	}
+	else
+	{
+		CPacket* res = Res_Login(account, 0);
+		if (res) 
+		{ 
+			SendUnicast(sessionID, res); res->SubRef(); 
+		}
+
+	}
+
+	packet->SubRef();
+	return TRUE;
 }
 
 
@@ -285,6 +430,31 @@ BOOL ChatServer::Req_Login(UINT64 sessionID, CPacket* packet)
 	return true;
 }
 
+BOOL ChatServer::Req_Login_Redis(UINT64 sessionID, CPacket* packet)
+{
+	Player* player = FindPlayer(sessionID);
+	if (player == nullptr)
+		return false;
+
+	if (player->sessionID != sessionID) 
+		return false;
+
+	if (player->accountNo != 0 || player->isLogined) 
+		return false;
+	
+	packet->AddRef();
+	EnqueueRedis(sessionID, packet);
+	
+	return TRUE;
+}
+
+void ChatServer::EnqueueRedis(UINT64 sessionID, CPacket* packet)
+{
+	st_Redis job{ sessionID, packet };
+	redisQ.push(job);
+	SetEvent(redis_event);
+}
+
 CPacket* ChatServer::Res_Login(INT64 account, BYTE status)
 {
 	CPacket* packet = CPacket::Alloc();
@@ -313,7 +483,7 @@ BOOL ChatServer::Req_SectorMove(UINT64 sessionID, CPacket* packet)
 	(*packet) >> x;
 	(*packet) >> y;
 
-	if (!IsValidSector(x, y)) 
+	if (!IsValidSector(x, y))
 		return false;
 
 	DeletePlayerSector(player);

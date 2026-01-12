@@ -1,6 +1,6 @@
 #pragma once
 #include "stdafx.h"
-#include "boost/lockfree/queue.hpp"
+#include <boost/lockfree/queue.hpp>
 #include "CPacket.h"
 #include "CRingBuffer.h"
 #include <list>
@@ -106,7 +106,6 @@ private:
 	LONG64 acceptCount;
 
 	BOOL running;
-
 
 private:
 	Session* CreateSession(SOCKET socket);
