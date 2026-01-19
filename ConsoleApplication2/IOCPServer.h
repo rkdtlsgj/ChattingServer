@@ -124,7 +124,7 @@ private:
 	void PushIndex(INT64 index);
 	UINT64 PopIndex();
 
-	void DisConnect(Session* session);
+	
 
 	Session* SessionLock(UINT64 sessionID);
 	void SessionUnLock(Session* session);	
@@ -146,6 +146,8 @@ protected:
 
 	void SendPacket(UINT64 id, CPacket* packet);
 
+	void DisConnect(Session* session);
+	void Disconnect(UINT64 sessionID);
 public:
 	BOOL Start(const WCHAR* ip, int port, short threadCount, bool nagle, int maxUserCount);
 };

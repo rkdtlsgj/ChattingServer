@@ -368,6 +368,15 @@ void IOCPServer::DisConnect(Session* session)
 	}
 }
 
+void IOCPServer::Disconnect(UINT64 sessionID)
+{
+	Session* session = SessionLock(sessionID);
+	if (session == NULL) 
+		return;
+
+	DisConnect(session);
+	SessionUnLock(session);
+}
 
 bool IOCPServer::PostSend(Session* session)
 {

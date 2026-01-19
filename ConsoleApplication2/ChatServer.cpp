@@ -14,9 +14,11 @@ ChatServer::~ChatServer()
 
 	WaitForSingleObject(update_thread, INFINITE);
 	WaitForSingleObject(redis_thread, INFINITE);
+	WaitForSingleObject(heartbeat_thread, INFINITE);
 
 	CloseHandle(main_event);
 	CloseHandle(update_thread);
+	CloseHandle(heartbeat_thread);
 
 	CloseHandle(redis_event);
 	CloseHandle(redis_thread);
@@ -95,6 +97,8 @@ BOOL ChatServer::Start(const WCHAR* ip, int port, short threadCount, bool nagle,
 
 	update_thread = ((HANDLE)_beginthreadex(NULL, 0, UpdateThread, (LPVOID)this, NULL, NULL));
 
+	heartbeat_thread = ((HANDLE)_beginthreadex(NULL, 0, HeartbeatThread, (LPVOID)this, NULL, NULL));
+
 	return true;
 }
 
@@ -110,6 +114,12 @@ unsigned int WINAPI ChatServer::RedisThread(LPVOID arg)
 	return 0;
 }
 
+unsigned int WINAPI ChatServer::HeartbeatThread(LPVOID arg)
+{
+	((ChatServer*)arg)->HeartbeatThread();
+	return 0;
+}
+
 void ChatServer::UpdateThread()
 {
 	while (exit == false)
@@ -122,6 +132,7 @@ void ChatServer::UpdateThread()
 			switch (msg->type)
 			{
 			case en_MSG_RECV:
+				Heartbeat(msg->session);
 				PacketProcess(msg->session, msg->packet);
 				break;
 
@@ -131,6 +142,10 @@ void ChatServer::UpdateThread()
 
 			case en_MSG_LEAVE:
 				DeletePlayer(msg->session);
+				break;
+
+			case en_MSG_HEART:
+				CheckTimeOut();
 				break;
 
 			case en_MSG_LOGIN_OK:
@@ -206,6 +221,30 @@ void ChatServer::RedisThread()
 	}
 }
 
+void ChatServer::HeartbeatThread()
+{
+	//players의 접근하는 스레드를 줄이기위해 메세지로 updatethread에서 처리할수있게한다.
+	HANDLE heartevent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+	while (!exit)
+	{
+		DWORD result = WaitForSingleObject(heartevent, 1000);
+
+		if (result == WAIT_TIMEOUT)
+		{
+			st_MSG* msg = msgPool.Alloc();
+			msg->type = en_MSG_HEART;
+			msg->session = 0;
+			msg->packet = nullptr;
+
+			msgQ.push(msg);	
+			//느슨한 처리를 위해 이벤트는 꺠우지않는다.
+		}
+	}
+
+	CloseHandle(heartevent);	
+}
+
 CPacket* ChatServer::MakeLoginResult(INT64 account, const WCHAR* id, const WCHAR* nick)
 {
 	CPacket* p = CPacket::Alloc();
@@ -233,6 +272,10 @@ BOOL ChatServer::PacketProcess(UINT64 sessionID, CPacket* packet)
 		break;
 	case en_PACKET_CS_CHAT_REQ_MESSAGE:
 		result = Req_Chat(sessionID, packet);
+		break;
+
+	case en_PACKET_CS_CHAT_REQ_HEARTBEAT:
+		result = true;
 		break;
 
 	default:
@@ -545,6 +588,19 @@ BOOL ChatServer::Req_Chat(UINT64 sessionID, CPacket* packet)
 	return true;
 }
 
+BOOL ChatServer::Heartbeat(UINT64 sessionID)
+{
+	Player* player = FindPlayer(sessionID);
+	if (player == nullptr)
+		return false;
+	if (player->sessionID != sessionID)
+		return false;
+
+	player->lastRecvTime = GetTickCount64();
+
+	return true;
+}
+
 CPacket* ChatServer::Res_Chat(Player* player, WCHAR* msg, WORD len)
 {
 	CPacket* packet = CPacket::Alloc();
@@ -611,4 +667,24 @@ void ChatServer::SendPacket_Around(Player* player, CPacket* packet, bool bSendMe
 			SendUnicast(target->sessionID, packet);
 		}
 	}
+}
+
+BOOL ChatServer::CheckTimeOut()
+{
+	INT64 curTime = GetTickCount64();
+	std::vector<UINT64> kickList;
+
+
+	for (auto& iter : players)
+	{
+		INT64 lastTime = iter.second->lastRecvTime;
+		if (curTime > lastTime && (curTime - lastTime) > 40000)
+			kickList.push_back(iter.first);
+
+	}
+
+	for (UINT64 sessionID : kickList)
+		Disconnect(sessionID);
+
+	return true;
 }

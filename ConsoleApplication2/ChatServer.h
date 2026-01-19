@@ -37,6 +37,7 @@ enum en_MSG_TYPE
 	en_MSG_RECV,
 	en_MSG_JOIN,
 	en_MSG_LEAVE,
+	en_MSG_HEART,
 	en_MSG_LOGIN_OK,
 	en_MSG_LOGIN_FAIL
 };
@@ -56,10 +57,14 @@ struct Player
 
 	LONG isLogined;
 
+	INT64 lastRecvTime;
+
 	void Reset()
 	{
 		sessionID = 0;
 		accountNo = 0;
+		lastRecvTime = 0;
+
 
 		sectorX = -1;
 		sectorY = -1;
@@ -119,6 +124,7 @@ private:
 	BOOL Req_Login(UINT64 sessionID, CPacket* packet);
 	BOOL Req_SectorMove(UINT64 sessionID, CPacket* packet);
 	BOOL Req_Chat(UINT64 sessionID, CPacket* packet);
+	BOOL Heartbeat(UINT64 sessionID);
 
 
 	CPacket* Res_Login(INT64 account, BYTE status);
@@ -133,15 +139,19 @@ private:
 
 	static unsigned int WINAPI UpdateThread(LPVOID arg);
 	static unsigned int WINAPI RedisThread(LPVOID arg);
+	static unsigned int WINAPI HeartbeatThread(LPVOID arg);
 
 	void UpdateThread();
 	void RedisThread();
+	void HeartbeatThread();
 
 	void EnqueueRedis(UINT64 sessionID, CPacket* packet);
 
 	BOOL Req_Login_Redis(UINT64 sessionID, CPacket* packet);
 	BOOL CompleteLogin(UINT64 sessionID, CPacket* resultPacket, bool success);
 	
+	BOOL CheckTimeOut();
+
 	CPacket* MakeLoginResult(INT64 account, const WCHAR* id, const WCHAR* nick);
 
 private:
@@ -158,6 +168,8 @@ private:
 
 	HANDLE main_event;
 	HANDLE update_thread;
+
+	HANDLE heartbeat_thread;
 
 	HANDLE redis_event;
 	HANDLE redis_thread;
