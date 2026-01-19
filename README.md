@@ -1,10 +1,14 @@
 # IOCP_Chatting_Server
 c++를 이용한 IOCP 섹터방식의 채팅서버<br>
-boost library - lockfreeQueue 사용
+<br>
+
+# 환경
+* redis 
+* boost library - lockfreeQueue 사용
+<br>
+
 
 간단한 암호화 추가
-
-redis 연동 로직 추가
 
 
 메세지 큐를 이용해서 단일스레드(updateThread)로 메세지처리<br>
