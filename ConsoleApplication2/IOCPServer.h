@@ -99,13 +99,16 @@ private:
 	std::mutex indexMutex;
 	UINT64 sessionID;
 
+
+	BOOL running;
+
+protected:
+
 	LONG64 sessionCount;
 	LONG64 sendTPS;
 	LONG64 recvTPS;
 	LONG64 acceptTPS;
 	LONG64 acceptCount;
-
-	BOOL running;
 
 private:
 	Session* CreateSession(SOCKET socket);

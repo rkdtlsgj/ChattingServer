@@ -4,7 +4,7 @@
 int main() 
 {
     ChatServer* server = new ChatServer();
-    server->Start(L"127.0.0.1", 6000, 4, true,3000);
+    server->Start(L"127.0.0.1", 6000, 4, true,5000);
     while (1)
     {
 

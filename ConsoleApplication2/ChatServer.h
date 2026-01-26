@@ -140,10 +140,12 @@ private:
 	static unsigned int WINAPI UpdateThread(LPVOID arg);
 	static unsigned int WINAPI RedisThread(LPVOID arg);
 	static unsigned int WINAPI HeartbeatThread(LPVOID arg);
+	static unsigned int WINAPI MonitorThread(LPVOID arg);
 
 	void UpdateThread();
 	void RedisThread();
 	void HeartbeatThread();
+	void MonitorThread();
 
 	void EnqueueRedis(UINT64 sessionID, CPacket* packet);
 
@@ -158,7 +160,7 @@ private:
 	BOOL exit;
 
 	CLFFreeList<Player> playerPool;
-	CLFFreeList< st_MSG> msgPool;
+	CLFFreeList<st_MSG> msgPool;
 
 	std::unordered_map<UINT64, Player*> players;
 	std::unordered_map<INT64, UINT64> accounts;
@@ -170,6 +172,8 @@ private:
 	HANDLE update_thread;
 
 	HANDLE heartbeat_thread;
+
+	HANDLE monitor_thread;
 
 	HANDLE redis_event;
 	HANDLE redis_thread;

@@ -15,10 +15,12 @@ ChatServer::~ChatServer()
 	WaitForSingleObject(update_thread, INFINITE);
 	WaitForSingleObject(redis_thread, INFINITE);
 	WaitForSingleObject(heartbeat_thread, INFINITE);
+	WaitForSingleObject(monitor_thread, INFINITE);
 
 	CloseHandle(main_event);
 	CloseHandle(update_thread);
 	CloseHandle(heartbeat_thread);
+	CloseHandle(monitor_thread);
 
 	CloseHandle(redis_event);
 	CloseHandle(redis_thread);
@@ -99,6 +101,8 @@ BOOL ChatServer::Start(const WCHAR* ip, int port, short threadCount, bool nagle,
 
 	heartbeat_thread = ((HANDLE)_beginthreadex(NULL, 0, HeartbeatThread, (LPVOID)this, NULL, NULL));
 
+	monitor_thread = ((HANDLE)_beginthreadex(NULL, 0, MonitorThread, (LPVOID)this, NULL, NULL));
+
 	return true;
 }
 
@@ -119,6 +123,13 @@ unsigned int WINAPI ChatServer::HeartbeatThread(LPVOID arg)
 	((ChatServer*)arg)->HeartbeatThread();
 	return 0;
 }
+
+unsigned int WINAPI ChatServer::MonitorThread(LPVOID arg)
+{
+	((ChatServer*)arg)->MonitorThread();
+	return 0;
+}
+
 
 void ChatServer::UpdateThread()
 {
@@ -244,6 +255,40 @@ void ChatServer::HeartbeatThread()
 
 	CloseHandle(heartevent);	
 }
+
+void ChatServer::MonitorThread()
+{
+	
+	HANDLE monitorevent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+	while (!exit)
+	{
+		DWORD result = WaitForSingleObject(monitorevent, 1000);
+
+		if (result == WAIT_TIMEOUT)
+		{
+			wprintf(L"Accept Total [%I64d]\n", acceptCount);
+			wprintf(L"Recv TPS [%I64d]\n", recvTPS);
+			wprintf(L"Send TPS [%I64d]\n", sendTPS);
+			wprintf(L"Accept TPS [%I64d]\n", acceptTPS);
+			wprintf(L"Connect User [%I64d]\n", sessionCount);
+			wprintf(L"player Pool [%I64d]\n", playerPool.GetAllocCount());
+			wprintf(L"player use [%I64d]\n", playerPool.GetUseCount());
+			wprintf(L"msg Pool [%I64d]\n", msgPool.GetAllocCount());
+			wprintf(L"msg Use [%I64d]\n\n", msgPool.GetUseCount());
+
+
+
+
+			InterlockedExchange((LONG*)&recvTPS, 0);
+			InterlockedExchange((LONG*)&sendTPS, 0);
+			InterlockedExchange((LONG*)&acceptTPS, 0);
+		}
+	}
+
+	CloseHandle(monitorevent);
+}
+
 
 CPacket* ChatServer::MakeLoginResult(INT64 account, const WCHAR* id, const WCHAR* nick)
 {

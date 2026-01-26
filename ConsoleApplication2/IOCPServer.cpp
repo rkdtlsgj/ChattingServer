@@ -67,7 +67,7 @@ BOOL IOCPServer::Start(const WCHAR* ip, int port, short threadCount, bool nagle,
 
 	acceptThread = (HANDLE)_beginthreadex(NULL, 0, AcceptThread, (LPVOID)this, 0, 0);
 
-	monitorThread = (HANDLE)_beginthreadex(NULL, 0, MonitorThread, (LPVOID)this, 0, 0);
+	//monitorThread = (HANDLE)_beginthreadex(NULL, 0, MonitorThread, (LPVOID)this, 0, 0);
 
 	for (int i = 1; i < allThreadCount; i++)
 		threadVector.push_back((HANDLE)_beginthreadex(NULL, 0, WorkerThread, (LPVOID)this, 0, 0));
@@ -247,7 +247,7 @@ unsigned int WINAPI IOCPServer::AcceptThread(LPVOID arg)
 			server->OnClientJoin(&session->clienr_addr, session->sessionID);
 			server->PostRecv(session);
 
-			InterlockedIncrement((LONG*)&server->acceptTPS);
+			//InterlockedIncrement((LONG*)&server->acceptTPS);
 			//InterlockedIncrement((LONG*)&server->acceptCount);
 
 			int index = GET_SESSION_INDEX(session->sessionID);
