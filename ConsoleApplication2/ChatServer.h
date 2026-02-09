@@ -4,7 +4,11 @@
 #include "Protocol.h"
 #include <unordered_map>
 #include <unordered_set>
+
 #include <cpp_redis/cpp_redis>
+#include <tacopie/tacopie>
+
+
 
 
 struct st_POSITION
@@ -180,7 +184,7 @@ private:
 	
 	boost::lockfree::queue<st_MSG*, boost::lockfree::capacity<4096>> msgQ;
 	boost::lockfree::queue<st_Redis, boost::lockfree::capacity<4096>> redisQ;
-	std::unique_ptr<cpp_redis::client> redis;
+	std::unique_ptr<cpp_redis::client> redis;	
 
 
 

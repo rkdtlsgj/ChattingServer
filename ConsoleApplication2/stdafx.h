@@ -29,3 +29,5 @@
 #pragma comment(lib, "Mswsock.lib")
 #pragma comment(lib, "DbgHelp.lib")
 #pragma comment(lib, "Psapi.lib")
+#pragma comment(lib, "cpp_redis\\cpp_redis.lib")
+#pragma comment(lib, "cpp_redis\\tacopie.lib")
