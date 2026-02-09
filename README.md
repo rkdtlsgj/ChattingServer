@@ -32,6 +32,6 @@ echo 테스트(100명)<br><br> <img width="359" height="125" alt="에코 테스�
 더미 테스트(3000명)<br>
 이동 500ms<br>
 채팅 300ms<br>
+pool 사용량 체크
 
-
-<img width="229" height="119" alt="섹터 테스트" src="https://github.com/user-attachments/assets/1c6ac3b2-76e7-47ec-93d2-7445726b3723" />
+<img width="191" height="372" alt="image" src="https://github.com/user-attachments/assets/f9eaf0fc-e0e7-406c-b7bb-6376b11cde6e" />
