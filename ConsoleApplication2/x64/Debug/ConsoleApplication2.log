@@ -1,9 +1,10 @@
 ﻿  ChatServer.cpp
+C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\ChatServer.cpp(656,15): warning C4018: '>': signed 또는 unsigned가 일치하지 않습니다.
 C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\CLFFreeList.h(125,12): warning C4244: '초기화 중': 'LONG64'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
   (소스 파일 'ChatServer.cpp'을(를) 컴파일하는 중)
       C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\CLFFreeList.h(125,12):
       템플릿 인스턴스화 컨텍스트(가장 오래된 인스턴스화 컨텍스트)가
-          C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\ChatServer.h(150,22):
+          C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\ChatServer.h(191,22):
           컴파일되는 클래스 템플릿 인스턴스화 'CLFFreeList<Player>'에 대한 참조를 확인하세요.
           C:\Users\rkdtl\source\repos\ChattingServer\ConsoleApplication2\CLFFreeList.h(111,1):
           클래스 템플릿 멤버 함수 'CLFFreeList<Player>::CLFFreeList(int,bool)'을(를) 컴파일하는 중입니다.

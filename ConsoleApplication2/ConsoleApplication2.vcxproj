@@ -127,11 +127,13 @@
     <ClCompile Include="ChatServer.cpp" />
     <ClCompile Include="ConsoleApplication2.cpp" />
     <ClCompile Include="CPacket.cpp" />
+    <ClCompile Include="CpuMonitor.cpp" />
     <ClCompile Include="CRingBuffer.cpp" />
     <ClCompile Include="IOCPServer.cpp" />
     <ClCompile Include="monitor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CpuMonitor.h" />
     <ClInclude Include="CrashDumpClass.h" />
     <ClInclude Include="ChatServer.h" />
     <ClInclude Include="CLFFreeList.h" />
