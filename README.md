@@ -21,24 +21,56 @@ c++를 이용한 IOCP 섹터방식의 채팅서버<br>
 
 # 시스템 구조
 * OnClientJoin/Leave/Recv 이벤트를 받아 내부 처리(JoinProc/LeaveProc/RecvProc)로 위임
+  
 * 섹터(Zone) 맵
   sector[y][x].set에 해당 섹터에 존재하는 Player 포인터를 보관
   섹터 이동 시 set 갱신, 채팅 시 주변 섹터에서 대상 수집
+  
 * 스레드 구성
   IOCP 워커 스레드(베이스 서버) + RedisThread + HeartbeatThread + MonitorThread
 
 * IOCP 워커스레드가 즉시 처리 ( 섹터이동 / 채팅 / 하트비트 등 짧고 빈번한 작업)
   전용 스레드 로그인 검증처럼 느린 작업은 워커사용을 지양함
   
-  
+# 동시성 / 안정성 설계
+* player 수명 관리
+  acquirPlayer로 참조 획득시 refcount 증가<br>
+  ReleasePlayer에서 refcount가 0되면 Pool에 반환<br>
+  closing 플래그를 통해 종료중 세션에 대한 후속처리 방지
+
+<details>
+  <summary>코드 보기</summary>
+  <img width="543" height="554" alt="image" src="https://github.com/user-attachments/assets/0e6f30ce-663a-46b5-a6de-c5a772843b60" />
+</details>
+
+
+* 락 관리  
+  player/accounts : 전역 srwlock으로 관리<br>
+  sector : 섹터 단위 srwlock으로 경합 최소화<br>
+  여러개의 섹터를 잠글때 lockIndex 기반으로 교착가능성을 줄이고 항상 같은순서로 잠금수행
+<details>
+  <summary>코드 보기</summary>
+  <img width="368" height="226" alt="image" src="https://github.com/user-attachments/assets/df2b5116-177d-4c0e-a4b8-3eef0ce2c147" />
+</details>
+
+
+
 # 최적화
 * CLFFreeList playerPool , msgPool , g_PacketPool 락경쟁 및 힙할당 최소화를 위해 메모리풀을 구현해서 사용  
-* packet의 제대로된 수명관리를 위해 refCount를 이용하여 관리 <br> <img width="370" height="311" alt="image" src="https://github.com/user-attachments/assets/ca11b11f-a1bf-4975-b6b3-c2dfbebedbd3" />
+* packet의 제대로된 수명관리를 위해 refCount를 이용하여 관리 <br>
+<details>
+  <summary>코드 보기</summary>
+  <img width="370" height="311" alt="image" src="https://github.com/user-attachments/assets/ca11b11f-a1bf-4975-b6b3-c2dfbebedbd3" />
+</details>
 
 * 테스트중 발생하는 오류를 분석하기 위해 CCrashDump 추가
 * tls를 사용한 프로파일러를 구현하여 성능테스트
 
-* 메세지 큐를 이용해서 단일스레드(updateThread)로 메세지처리<br> <img width="359" height="125" alt="image" src="https://github.com/user-attachments/assets/c7dedd13-ce26-49c9-a760-a601274a9fa1" />
+* 메세지 큐를 이용해서 단일스레드(updateThread)로 메세지처리<br>
+<details>
+  <summary>코드 보기</summary>
+  <img width="359" height="125" alt="image" src="https://github.com/user-attachments/assets/c7dedd13-ce26-49c9-a760-a601274a9fa1" />
+</details>
 
 * 50 x 50 섹터에서 주변 3 x 3 섹터에만 메시지 전송으로 효율적으로 수정
 <br><br><br>
